@@ -1,0 +1,647 @@
+:root {
+  color-scheme: light;
+  --paper: #f8faf7;
+  --panel: #ffffff;
+  --ink: #17211b;
+  --soft-ink: #617064;
+  --line: #dce5dc;
+  --green: #2f6f4e;
+  --blue: #2563eb;
+  --amber: #b45309;
+  --red: #b42318;
+  --shadow: 0 18px 44px rgba(23, 33, 27, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: var(--ink);
+  font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", system-ui, sans-serif;
+  background: var(--paper);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* LeafletのCDN CSSが遅延・失敗しても地図が崩れないための最小セット */
+.leaflet-container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  background: #dce9d8;
+  outline-offset: 1px;
+}
+
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+  user-select: none;
+}
+
+.leaflet-tile {
+  width: 256px;
+  height: 256px;
+  border: 0;
+}
+
+.leaflet-map-pane,
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-shadow-pane,
+.leaflet-marker-pane,
+.leaflet-tooltip-pane,
+.leaflet-popup-pane {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.leaflet-tile-pane {
+  z-index: 200;
+}
+
+.leaflet-overlay-pane {
+  z-index: 400;
+}
+
+.leaflet-marker-pane {
+  z-index: 600;
+}
+
+.leaflet-control-container {
+  position: relative;
+  z-index: 800;
+}
+
+.leaflet-control {
+  position: relative;
+  z-index: 800;
+  pointer-events: auto;
+}
+
+.leaflet-bottom,
+.leaflet-top {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.leaflet-top {
+  top: 0;
+}
+
+.leaflet-bottom {
+  bottom: 0;
+}
+
+.leaflet-left {
+  left: 0;
+}
+
+.leaflet-right {
+  right: 0;
+}
+
+.leaflet-control-zoom {
+  margin: 0 12px 12px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+  box-shadow: var(--shadow);
+}
+
+.leaflet-control-zoom a {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.leaflet-control-zoom a + a {
+  border-top: 1px solid var(--line);
+}
+
+.leaflet-control-attribution {
+  margin: 0 8px 6px 0;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--soft-ink);
+  font-size: 0.68rem;
+}
+
+.leaflet-control-attribution a {
+  color: var(--green);
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--soft-ink);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0;
+  font-size: clamp(1.35rem, 3vw, 2.1rem);
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+
+h2 {
+  margin-bottom: 0;
+  font-size: 1.08rem;
+  letter-spacing: 0;
+}
+
+h3 {
+  margin-bottom: 3px;
+  font-size: 1.2rem;
+}
+
+.header-actions,
+.section-head,
+.detail-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.workspace {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 390px;
+}
+
+.map-area {
+  position: relative;
+  min-height: 640px;
+}
+
+#map {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.map-status {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 500;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow);
+  color: var(--soft-ink);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.map-status span:first-child {
+  color: var(--ink);
+}
+
+.range-toggle {
+  display: inline-grid;
+  grid-template-columns: 76px 56px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+}
+
+.range-toggle button {
+  min-height: 30px;
+  border: 0;
+  color: var(--soft-ink);
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.range-toggle button + button {
+  border-left: 1px solid var(--line);
+}
+
+.range-toggle button[aria-pressed="true"] {
+  color: white;
+  background: var(--green);
+}
+
+.side-panel {
+  min-height: 0;
+  max-height: calc(100vh - 76px);
+  overflow: auto;
+  border-left: 1px solid var(--line);
+  background: #f4f7f2;
+}
+
+.panel-section {
+  padding: 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.report-form,
+.settings-form {
+  display: grid;
+  gap: 13px;
+  margin-top: 16px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field span {
+  color: var(--soft-ink);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 43px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 11px;
+  color: var(--ink);
+  background: white;
+}
+
+.field textarea {
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.is-hidden {
+  display: none;
+}
+
+.coordinate-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.primary-button,
+.secondary-button,
+.text-button,
+.danger-text-button,
+.icon-button {
+  border-radius: 8px;
+  font-weight: 800;
+}
+
+.primary-button {
+  min-height: 46px;
+  border: 0;
+  color: white;
+  background: var(--green);
+}
+
+.secondary-button {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  padding: 0 13px;
+  color: var(--ink);
+  background: white;
+}
+
+.danger-button {
+  color: #b42318;
+  border-color: rgba(180, 35, 24, 0.28);
+}
+
+.text-button {
+  border: 0;
+  color: var(--soft-ink);
+  background: transparent;
+}
+
+.danger-text-button {
+  border: 0;
+  color: #b42318;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.icon-button {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: white;
+}
+
+.detail-view {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.empty-state,
+.photo-placeholder {
+  padding: 18px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--soft-ink);
+  background: #fbfcfa;
+  text-align: center;
+}
+
+.animal-badge {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  color: white;
+  background: var(--badge-color, var(--green));
+  font-weight: 900;
+}
+
+.serum-badge {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  color: white;
+  background: #b42318;
+  font-weight: 900;
+}
+
+.detail-title {
+  justify-content: flex-start;
+}
+
+.detail-title p {
+  margin-bottom: 0;
+  color: var(--soft-ink);
+  font-weight: 700;
+}
+
+.detail-photo {
+  width: 100%;
+  max-height: 230px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
+.detail-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.detail-list div {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.detail-list dt {
+  color: var(--soft-ink);
+  font-weight: 800;
+}
+
+.detail-list dd {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.add-photo-field {
+  margin-top: 2px;
+}
+
+.animal-marker {
+  background: transparent;
+}
+
+.animal-marker span,
+.serum-marker span,
+.school-icon,
+.selected-location-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 3px solid white;
+  border-radius: 999px;
+  box-shadow: 0 10px 22px rgba(23, 33, 27, 0.24);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.animal-marker span {
+  background: var(--marker-color, var(--green));
+}
+
+.serum-marker {
+  background: transparent;
+}
+
+.serum-marker span {
+  background: #b42318;
+}
+
+.danger-medium span {
+  outline: 3px solid rgba(180, 83, 9, 0.28);
+}
+
+.danger-high span {
+  outline: 3px solid rgba(180, 35, 24, 0.34);
+}
+
+.school-icon {
+  background: var(--blue);
+}
+
+.selected-location-icon {
+  background: var(--red);
+}
+
+dialog {
+  width: min(520px, calc(100vw - 24px));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0;
+  box-shadow: var(--shadow);
+}
+
+dialog::backdrop {
+  background: rgba(23, 33, 27, 0.38);
+}
+
+.settings-form {
+  margin: 0;
+  padding: 18px;
+}
+
+.serum-section {
+  background: #fffafa;
+}
+
+.serum-list {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+  margin-top: 14px;
+}
+
+.serum-list-item {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--ink);
+  background: white;
+  text-align: left;
+}
+
+.serum-list-item strong {
+  font-size: 0.9rem;
+}
+
+.serum-list-item span {
+  color: var(--soft-ink);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+#toggle-serum-button[aria-pressed="true"] {
+  color: white;
+  border-color: #b42318;
+  background: #b42318;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .map-area {
+    min-height: 52vh;
+  }
+
+  .side-panel {
+    max-height: none;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 620px) {
+  .app-header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 14px;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions button {
+    flex: 1;
+  }
+
+  .panel-section {
+    padding: 15px;
+  }
+
+  .coordinate-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .map-area {
+    min-height: 48vh;
+  }
+}
