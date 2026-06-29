@@ -271,6 +271,23 @@ h3 {
   color: var(--ink);
 }
 
+.school-pick-hint {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  z-index: 700;
+  transform: translateX(-50%);
+  padding: 10px 14px;
+  border: 1px solid rgba(37, 99, 235, 0.24);
+  border-radius: 8px;
+  color: white;
+  background: var(--blue);
+  box-shadow: var(--shadow);
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: center;
+}
+
 .range-toggle {
   display: inline-grid;
   grid-template-columns: 76px 56px;
@@ -558,6 +575,38 @@ dialog::backdrop {
   padding: 18px;
 }
 
+.settings-tools {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.settings-status {
+  margin: 0;
+  color: var(--soft-ink);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.settings-status.is-error {
+  color: #b42318;
+}
+
+#pick-school-button[aria-pressed="true"] {
+  color: white;
+  border-color: var(--blue);
+  background: var(--blue);
+}
+
+.school-pick-mode #map {
+  cursor: crosshair;
+}
+
 .serum-section {
   background: #fffafa;
 }
@@ -638,6 +687,10 @@ button:active {
   }
 
   .coordinate-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-actions {
     grid-template-columns: 1fr;
   }
 

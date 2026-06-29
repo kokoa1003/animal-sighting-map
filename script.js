@@ -375,6 +375,7 @@ const state = {
   selectedLocationMarker: null,
   schoolCircle: null,
   schoolMarker: null,
+  schoolPickMode: false,
   displayRange: "recent",
   serumVisible: true,
   sightings: loadSightings(),
@@ -391,6 +392,7 @@ const elements = {
   showAllButton: document.querySelector("#show-all-button"),
   visibleCount: document.querySelector("#visible-count"),
   serumCount: document.querySelector("#serum-count"),
+  schoolPickHint: document.querySelector("#school-pick-hint"),
   serumList: document.querySelector("#serum-list"),
   detailView: document.querySelector("#detail-view"),
   animalType: document.querySelector("#animal-type"),
@@ -408,6 +410,10 @@ const elements = {
   settingsDialog: document.querySelector("#settings-dialog"),
   openSettingsButton: document.querySelector("#open-settings-button"),
   settingsForm: document.querySelector("#settings-form"),
+  schoolAddress: document.querySelector("#school-address"),
+  searchSchoolAddressButton: document.querySelector("#search-school-address-button"),
+  pickSchoolButton: document.querySelector("#pick-school-button"),
+  schoolPickStatus: document.querySelector("#school-pick-status"),
   schoolLatitude: document.querySelector("#school-latitude"),
   schoolLongitude: document.querySelector("#school-longitude"),
   slackWebhookUrl: document.querySelector("#slack-webhook-url"),
@@ -441,6 +447,15 @@ function initializeMap() {
   }).addTo(state.map);
 
   state.map.on("click", (event) => {
+    if (state.schoolPickMode) {
+      setSchoolPickMode(false);
+      updateSchoolLocation(event.latlng.lat, event.latlng.lng, {
+        message: "学校位置を地図で指定しました。",
+        persist: true,
+      });
+      return;
+    }
+
     setSelectedLocation(event.latlng.lat, event.latlng.lng);
   });
 
@@ -458,6 +473,8 @@ function attachEventListeners() {
   elements.clearSightingsButton.addEventListener("click", clearSightings);
   elements.openSettingsButton.addEventListener("click", () => elements.settingsDialog.showModal());
   elements.settingsForm.addEventListener("submit", saveSettings);
+  elements.searchSchoolAddressButton.addEventListener("click", searchSchoolAddress);
+  elements.pickSchoolButton.addEventListener("click", () => setSchoolPickMode(!state.schoolPickMode));
   window.addEventListener("hashchange", selectSightingFromHash);
 }
 
@@ -727,13 +744,14 @@ function locateUser() {
 
 function saveSettings(event) {
   event.preventDefault();
-  state.settings = {
-    schoolLatitude: Number(elements.schoolLatitude.value),
-    schoolLongitude: Number(elements.schoolLongitude.value),
-    slackWebhookUrl: elements.slackWebhookUrl.value.trim(),
-  };
-  window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
-  renderSchoolArea();
+  updateSchoolLocation(Number(elements.schoolLatitude.value), Number(elements.schoolLongitude.value), {
+    message: "通知設定を保存しました。",
+    moveMap: false,
+    persist: false,
+  });
+  state.settings.slackWebhookUrl = elements.slackWebhookUrl.value.trim();
+  saveSettingsToStorage();
+  setSchoolPickMode(false);
   elements.settingsDialog.close();
 }
 
@@ -759,6 +777,85 @@ function renderSchoolArea() {
     fillOpacity: 0.08,
     weight: 2,
   }).addTo(state.map);
+}
+
+function updateSchoolLocation(latitude, longitude, options = {}) {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    setSchoolStatus("緯度・経度を確認してください。", true);
+    return;
+  }
+
+  state.settings.schoolLatitude = latitude;
+  state.settings.schoolLongitude = longitude;
+  elements.schoolLatitude.value = latitude.toFixed(6);
+  elements.schoolLongitude.value = longitude.toFixed(6);
+  renderSchoolArea();
+
+  if (options.moveMap !== false) {
+    state.map.setView([latitude, longitude], Math.max(state.map.getZoom(), 15), { animate: true });
+  }
+
+  if (options.persist) {
+    saveSettingsToStorage();
+  }
+
+  if (options.message) {
+    setSchoolStatus(options.message);
+  }
+}
+
+function saveSettingsToStorage() {
+  window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
+}
+
+function setSchoolPickMode(enabled) {
+  state.schoolPickMode = enabled;
+  elements.pickSchoolButton.setAttribute("aria-pressed", String(enabled));
+  document.body.classList.toggle("school-pick-mode", enabled);
+  elements.schoolPickHint.classList.toggle("is-hidden", !enabled);
+  if (enabled && elements.settingsDialog.open) {
+    elements.settingsDialog.close();
+  }
+  setSchoolStatus(enabled ? "地図上で学校の場所をクリックしてください。" : "住所検索、または地図クリックで学校位置を設定できます。");
+}
+
+async function searchSchoolAddress() {
+  const query = elements.schoolAddress.value.trim();
+  if (!query) {
+    setSchoolStatus("住所を入力してください。", true);
+    return;
+  }
+
+  setSchoolStatus("住所を検索しています...");
+
+  try {
+    const response = await fetch(`https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(query)}`);
+    if (!response.ok) {
+      throw new Error("住所検索に失敗しました。");
+    }
+
+    const results = await response.json();
+    const first = results[0];
+    if (!first) {
+      setSchoolStatus("住所が見つかりませんでした。表記を少し変えて試してください。", true);
+      return;
+    }
+
+    const [longitude, latitude] = first.geometry.coordinates;
+    const title = first.properties?.title || query;
+    setSchoolPickMode(false);
+    updateSchoolLocation(latitude, longitude, {
+      message: `学校位置を「${title}」に設定しました。`,
+      persist: true,
+    });
+  } catch (error) {
+    setSchoolStatus("住所検索に失敗しました。時間をおいて再度試してください。", true);
+  }
+}
+
+function setSchoolStatus(message, isError = false) {
+  elements.schoolPickStatus.textContent = message;
+  elements.schoolPickStatus.classList.toggle("is-error", isError);
 }
 
 async function notifySlackIfNeeded(sighting) {
@@ -872,6 +969,8 @@ function syncSettingsForm() {
   elements.schoolLatitude.value = state.settings.schoolLatitude;
   elements.schoolLongitude.value = state.settings.schoolLongitude;
   elements.slackWebhookUrl.value = state.settings.slackWebhookUrl;
+  elements.schoolAddress.value = "";
+  setSchoolStatus("住所検索、または地図クリックで学校位置を設定できます。");
 }
 
 function loadSightings() {
