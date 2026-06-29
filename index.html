@@ -42,6 +42,7 @@
             </div>
             <span id="serum-count">血清0件</span>
           </div>
+          <div id="school-pick-hint" class="school-pick-hint is-hidden">学校の場所を地図上でクリックしてください</div>
         </section>
 
         <aside class="side-panel" aria-label="投稿と詳細">
@@ -161,6 +162,18 @@
             <h2>通知設定</h2>
           </div>
           <button class="icon-button" value="cancel" aria-label="閉じる">×</button>
+        </div>
+
+        <div class="settings-tools">
+          <label class="field">
+            <span>学校・施設の住所</span>
+            <input id="school-address" type="search" placeholder="例：徳島県名西郡神山町..." />
+          </label>
+          <div class="settings-actions">
+            <button id="search-school-address-button" class="secondary-button" type="button">住所検索</button>
+            <button id="pick-school-button" class="secondary-button" type="button" aria-pressed="false">地図で指定</button>
+          </div>
+          <p id="school-pick-status" class="settings-status">住所検索、または地図クリックで学校位置を設定できます。</p>
         </div>
 
         <div class="coordinate-grid">
