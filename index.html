@@ -1,53 +1,206 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>動物出没情報共有マップ</title>
     <meta
       name="description"
-      content="貼り付けた英語歌詞の単語やフレーズをタップして日本語の意味を確認できる学習アプリ"
+      content="地域の動物出没情報を地図上で投稿・確認できるWebアプリ"
     />
-    <title>Lyric Reader</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIINfQxG4v7K4A6ORh8U9myoUC2xB+Zyr5Q="
+      crossorigin=""
+    />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main class="app">
-      <section class="hero">
-        <p class="eyebrow">Tap to learn</p>
-        <h1>Lyric Reader</h1>
-        <p class="lead">
-          歌詞を貼り付けて、単語やフレーズをタップして意味を確認できます。歌詞は保存せず、画面上だけで処理します。
-        </p>
-      </section>
-
-      <section class="input-panel" aria-label="歌詞入力">
-        <label for="lyrics-input">歌詞入力</label>
-        <textarea id="lyrics-input" placeholder="ここに英語の歌詞を貼り付けてください"></textarea>
-        <div class="actions">
-          <button id="load-button" class="primary" type="button">読み込み</button>
-          <button id="clear-button" class="secondary" type="button">クリア</button>
+    <div class="app-shell">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">Community Safety Map</p>
+          <h1>動物出没情報共有マップ</h1>
         </div>
-        <p id="dictionary-status" class="dictionary-status">辞書を読み込み中...</p>
-      </section>
+        <div class="header-actions">
+          <button id="toggle-serum-button" class="secondary-button" type="button">血清配置先</button>
+          <button id="clear-sightings-button" class="secondary-button danger-button" type="button">投稿データ削除</button>
+          <button id="locate-button" class="secondary-button" type="button">現在地</button>
+          <button id="open-settings-button" class="secondary-button" type="button">通知設定</button>
+        </div>
+      </header>
 
-      <section id="lyrics-output" class="lyrics-output" aria-label="歌詞表示">
-        <p class="empty">歌詞を貼り付けて「読み込み」を押すと、ここに行ごとに表示されます。</p>
-      </section>
-    </main>
-
-    <section id="definition-card" class="definition-card" aria-live="polite" aria-hidden="true">
-      <div class="card-inner">
-        <div class="card-header">
-          <div>
-            <p class="card-label">Meaning</p>
-            <h2 id="selected-term"></h2>
+      <main class="workspace">
+        <section class="map-area" aria-label="動物出没マップ">
+          <div id="map"></div>
+          <div class="map-status">
+            <span id="visible-count">0件</span>
+            <div class="range-toggle" aria-label="表示期間">
+              <button id="show-recent-button" type="button" aria-pressed="true">直近1ヶ月</button>
+              <button id="show-all-button" type="button" aria-pressed="false">すべて</button>
+            </div>
+            <span id="serum-count">血清0件</span>
           </div>
-          <button id="close-card-button" class="close-button" type="button" aria-label="解説カードを閉じる">×</button>
-        </div>
-        <div id="definition-content"></div>
-      </div>
-    </section>
+          <div id="school-pick-hint" class="school-pick-hint is-hidden">学校の場所を地図上でクリックしてください</div>
+        </section>
 
+        <aside class="side-panel" aria-label="投稿と詳細">
+          <section class="panel-section">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Report</p>
+                <h2>目撃情報を投稿</h2>
+              </div>
+              <button id="reset-form-button" class="text-button" type="button">リセット</button>
+            </div>
+
+            <form id="report-form" class="report-form">
+              <label class="field">
+                <span>動物の種類</span>
+                <select id="animal-type" required>
+                  <option value="monkey">サル</option>
+                  <option value="boar">イノシシ</option>
+                  <option value="snake">ヘビ</option>
+                  <option value="bear">クマ</option>
+                  <option value="deer">鹿</option>
+                  <option value="bird">鳥</option>
+                  <option value="bat">コウモリ</option>
+                  <option value="bee">ハチ</option>
+                  <option value="other">その他</option>
+                </select>
+              </label>
+
+              <label id="other-animal-field" class="field is-hidden">
+                <span>動物名</span>
+                <input id="other-animal-name" type="text" maxlength="30" placeholder="例：タヌキ、キツネなど" />
+              </label>
+
+              <label class="field">
+                <span>目撃日時</span>
+                <input id="spotted-at" type="datetime-local" required />
+              </label>
+
+              <div class="coordinate-grid">
+                <label class="field">
+                  <span>緯度</span>
+                  <input id="latitude" type="number" step="0.000001" required />
+                </label>
+                <label class="field">
+                  <span>経度</span>
+                  <input id="longitude" type="number" step="0.000001" required />
+                </label>
+              </div>
+
+              <label class="field">
+                <span>場所の補足説明</span>
+                <input id="location-description" type="text" maxlength="80" placeholder="校門北側、田んぼ沿いなど" required />
+              </label>
+
+              <label class="field">
+                <span>状況説明</span>
+                <textarea id="behavior-description" rows="3" maxlength="240" placeholder="道路を横切った、畑にいたなど" required></textarea>
+              </label>
+
+              <div class="coordinate-grid">
+                <label class="field">
+                  <span>危険度</span>
+                  <select id="danger-level" required>
+                    <option value="low">低</option>
+                    <option value="medium">中</option>
+                    <option value="high">高</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>頭数</span>
+                  <input id="count" type="number" min="1" max="99" value="1" required />
+                </label>
+              </div>
+
+              <label class="field">
+                <span>写真</span>
+                <input id="photo" type="file" accept="image/*" />
+              </label>
+
+              <label class="field">
+                <span>投稿者の連絡先</span>
+                <input id="reporter-contact" type="text" maxlength="80" placeholder="電話番号、メール、所属など" />
+              </label>
+
+              <button class="primary-button" type="submit">投稿する</button>
+            </form>
+          </section>
+
+          <section class="panel-section detail-section" aria-live="polite">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Detail</p>
+                <h2>詳細</h2>
+              </div>
+            </div>
+            <div id="detail-view" class="detail-view empty-state">地図上のアイコンを選択してください。</div>
+          </section>
+
+          <section class="panel-section serum-section">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Serum</p>
+                <h2>まむし血清配置先</h2>
+              </div>
+            </div>
+            <div id="serum-list" class="serum-list"></div>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <dialog id="settings-dialog">
+      <form id="settings-form" method="dialog" class="settings-form">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Slack Workflow</p>
+            <h2>通知設定</h2>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="閉じる">×</button>
+        </div>
+
+        <div class="settings-tools">
+          <label class="field">
+            <span>学校・施設の住所</span>
+            <input id="school-address" type="search" placeholder="例：徳島県名西郡神山町..." />
+          </label>
+          <div class="settings-actions">
+            <button id="search-school-address-button" class="secondary-button" type="button">住所検索</button>
+            <button id="pick-school-button" class="secondary-button" type="button" aria-pressed="false">地図で指定</button>
+          </div>
+          <p id="school-pick-status" class="settings-status">住所検索、または地図クリックで学校位置を設定できます。</p>
+        </div>
+
+        <div class="coordinate-grid">
+          <label class="field">
+            <span>学校の緯度</span>
+            <input id="school-latitude" type="number" step="0.000001" required />
+          </label>
+          <label class="field">
+            <span>学校の経度</span>
+            <input id="school-longitude" type="number" step="0.000001" required />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Slack Workflow Webhook URL</span>
+          <input id="slack-webhook-url" type="url" placeholder="https://hooks.slack.com/workflows/..." />
+        </label>
+
+        <button class="primary-button" value="default">保存</button>
+      </form>
+    </dialog>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
     <script src="./script.js"></script>
   </body>
 </html>
