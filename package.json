@@ -1,0 +1,13 @@
+{
+  "name": "lyric-reader",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "python3 -m http.server 5173",
+    "build:dictionary": "node tools/build-dictionary.mjs"
+  },
+  "devDependencies": {
+    "harurow-ejdict": "^2.2.0"
+  }
+}
