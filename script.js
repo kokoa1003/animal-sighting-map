@@ -645,6 +645,11 @@ function selectSighting(id) {
       <span>写真を追加・差し替え</span>
       <input data-photo-for="${sighting.id}" type="file" accept="image/*" />
     </label>
+    ${
+      sighting.isSeed
+        ? ""
+        : `<button class="secondary-button danger-button detail-delete-button" data-delete-sighting="${sighting.id}" type="button">この投稿を削除</button>`
+    }
   `;
 
   const photoInput = elements.detailView.querySelector("[data-photo-for]");
@@ -657,10 +662,33 @@ function selectSighting(id) {
     selectSighting(sighting.id);
   });
 
+  const deleteButton = elements.detailView.querySelector("[data-delete-sighting]");
+  if (deleteButton) {
+    deleteButton.addEventListener("click", () => deleteSighting(sighting.id));
+  }
+
   const marker = state.markers.get(id);
   if (marker) {
     state.map.setView(marker.getLatLng(), Math.max(state.map.getZoom(), 15), { animate: true });
   }
+}
+
+function deleteSighting(id) {
+  const sighting = state.sightings.find((item) => item.id === id);
+  if (!sighting || sighting.isSeed) {
+    window.alert("このデータは削除できません。");
+    return;
+  }
+
+  const ok = window.confirm("この投稿を削除します。");
+  if (!ok) return;
+
+  state.sightings = state.sightings.filter((item) => item.id !== id);
+  saveSightings();
+  renderSightings();
+  window.history.replaceState(null, "", window.location.pathname);
+  elements.detailView.className = "detail-view empty-state";
+  elements.detailView.textContent = "地図上のアイコンを選択してください。";
 }
 
 function selectSightingFromHash() {
