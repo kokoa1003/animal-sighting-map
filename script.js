@@ -322,6 +322,7 @@ const defaultSettings = {
   schoolLatitude: 34.0700,
   schoolLongitude: 134.560898,
   slackWebhookUrl: "",
+  googleSheetsWebhookUrl: "",
 };
 
 const serumLocations = [
@@ -417,6 +418,7 @@ const elements = {
   schoolLatitude: document.querySelector("#school-latitude"),
   schoolLongitude: document.querySelector("#school-longitude"),
   slackWebhookUrl: document.querySelector("#slack-webhook-url"),
+  googleSheetsWebhookUrl: document.querySelector("#google-sheets-webhook-url"),
 };
 
 initialize();
@@ -517,7 +519,10 @@ async function handleReportSubmit(event) {
   renderSightings();
   selectSighting(sighting.id);
   resetReportForm();
-  await notifySlackIfNeeded(sighting);
+  await Promise.allSettled([
+    notifySlackIfNeeded(sighting),
+    saveSightingToSpreadsheet(sighting),
+  ]);
 }
 
 function renderSightings() {
@@ -750,6 +755,7 @@ function saveSettings(event) {
     persist: false,
   });
   state.settings.slackWebhookUrl = elements.slackWebhookUrl.value.trim();
+  state.settings.googleSheetsWebhookUrl = elements.googleSheetsWebhookUrl.value.trim();
   saveSettingsToStorage();
   setSchoolPickMode(false);
   elements.settingsDialog.close();
@@ -894,6 +900,54 @@ async function notifySlackIfNeeded(sighting) {
   }
 }
 
+async function saveSightingToSpreadsheet(sighting) {
+  if (!state.settings.googleSheetsWebhookUrl) {
+    return;
+  }
+
+  const animal = animalTypes[sighting.animalType] || animalTypes.other;
+  const distance = calculateDistanceKm(
+    state.settings.schoolLatitude,
+    state.settings.schoolLongitude,
+    sighting.latitude,
+    sighting.longitude
+  );
+  const payload = {
+    id: sighting.id,
+    animalType: sighting.animalType,
+    animalName: sighting.animalName || animal.label,
+    spottedAt: sighting.spottedAt,
+    spottedAtText: formatDateTime(sighting.spottedAt),
+    latitude: sighting.latitude,
+    longitude: sighting.longitude,
+    locationDescription: sighting.locationDescription,
+    behaviorDescription: sighting.behaviorDescription,
+    dangerLevel: sighting.dangerLevel,
+    dangerLevelText: dangerLabels[sighting.dangerLevel],
+    count: sighting.count,
+    photoUrl: sighting.photoUrl ? "写真あり（アプリ内保存）" : "",
+    warningMessage: sighting.warningMessage,
+    reporterContact: sighting.reporterContact,
+    status: sighting.status,
+    expiresAt: sighting.expiresAt,
+    createdAt: sighting.createdAt,
+    updatedAt: sighting.updatedAt,
+    distanceFromSchoolKm: Number(distance.toFixed(2)),
+    detailUrl: `${window.location.href.split("#")[0]}#${sighting.id}`,
+  };
+
+  try {
+    await fetch(state.settings.googleSheetsWebhookUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.warn("Google Sheets sync failed", error);
+  }
+}
+
 function createAnimalIcon(type, dangerLevel) {
   const animal = animalTypes[type] || animalTypes.other;
   return L.divIcon({
@@ -969,6 +1023,7 @@ function syncSettingsForm() {
   elements.schoolLatitude.value = state.settings.schoolLatitude;
   elements.schoolLongitude.value = state.settings.schoolLongitude;
   elements.slackWebhookUrl.value = state.settings.slackWebhookUrl;
+  elements.googleSheetsWebhookUrl.value = state.settings.googleSheetsWebhookUrl;
   elements.schoolAddress.value = "";
   setSchoolStatus("住所検索、または地図クリックで学校位置を設定できます。");
 }
